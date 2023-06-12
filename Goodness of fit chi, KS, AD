@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import, chi2
+from scipy.stats import chi2
 
 
 # chi squared test
