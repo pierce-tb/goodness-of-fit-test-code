@@ -1,0 +1,22 @@
+import numpy as np
+from scipy.stats import, chi2
+
+
+# chi squared test
+# Calculate the observed and expected frequencies
+# Following is just for reference, change with your data
+observed = np.array([1, 5, 12, 10, 6, 5, 3, 1] # Observed frequency
+expected = np.array([5, 5, 5, 5, 5, 5, 5, 5]) # Expected frequency
+# Calculate the chi-squared statistic
+chi_squared = np.sum((observed - expected) ** 2 / expected)
+
+# Degrees of freedom (number of categories - 1)
+degrees_of_freedom = len(observed) - 1
+
+# Calculate the p-value using chi-squared distribution
+p_value = 1 - chi2.cdf(chi_squared, degrees_of_freedom)
+
+# Print the results
+print("Chi-squared statistic:", chi_squared)
+print("Degrees of freedom:", degrees_of_freedom)
+print("p-value:", p_value)
