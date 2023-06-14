@@ -1,0 +1,43 @@
+import pandas as pd
+import numpy as np
+import scipy.stats as stats
+from scipy.stats import chi2
+
+
+data_frame = pd.read_excel(r'E:\data.xlsx')
+
+# Converting the date column to datetime format and grouping
+data_frame['Date'] = pd.to_datetime(data_frame['Date'])
+grouped_data = data_frame.groupby(data_frame['Date'].dt.year)
+
+# Find the maximum value within each group
+max_values = grouped_data['precipitation'].max()
+
+# Find the observed and expected frequencies
+bins = 10
+params = stats.pearson3.fit(max_values) # only done for pearson3 here
+min_value = np.min(max_values)
+max_value = np.max(max_values)
+
+x = np.linspace(min_value, max_value, bins+1)
+print(x)
+
+observed, _ = np.histogram(max_values, 10)
+expected = len(max_values) * np.diff(stats.pearson3.cdf(x, *params))
+
+
+print("observed:", observed)
+print("expected:", expected)
+
+# Calculate the chi-squared statistic
+chi_squared = np.sum((observed - expected) ** 2 / expected)
+
+# Degrees of freedom (number of categories - 1)
+degrees_of_freedom = len(observed) - 1
+
+# Calculate the p-value using chi-squared distribution
+p_value = 1 - chi2.cdf(chi_squared, degrees_of_freedom)
+# Print the results
+print("Chi-squared statistic:", chi_squared)
+print("Degrees of freedom:", degrees_of_freedom)
+print("p-value:", p_value)
