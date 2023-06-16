@@ -1,22 +1,81 @@
+import pandas as pd
 import numpy as np
-from scipy.stats import chi2
+import scipy.stats as stats
+from scipy.stats import norm, lognorm, pearson3, chi2, kstest
 
 
-# chi squared test
-# Calculate the observed and expected frequencies
-# Following is just for reference, change with your data
-observed = np.array([1, 5, 12, 10, 6, 5, 3, 1] # Observed frequency
-expected = np.array([5, 5, 5, 5, 5, 5, 5, 5]) # Expected frequency
-# Calculate the chi-squared statistic
-chi_squared = np.sum((observed - expected) ** 2 / expected)
+# Define chi squared test
+def chisquare(observed, expected):
+    # Calculate the chi-squared statistic
+    chi_squared = np.sum((observed - expected) ** 2 / expected)
 
-# Degrees of freedom (number of categories - 1)
-degrees_of_freedom = len(observed) - 1
+    # Degrees of freedom (number of categories - 1)
+    degrees_of_freedom = len(observed) - 1
 
-# Calculate the p-value using chi-squared distribution
-p_value = 1 - chi2.cdf(chi_squared, degrees_of_freedom)
+    # Calculate the p-value using chi-squared distribution
+    p = 1 - chi2.cdf(chi_squared, degrees_of_freedom)
+    return chi_squared, p
 
-# Print the results
-print("Chi-squared statistic:", chi_squared)
-print("Degrees of freedom:", degrees_of_freedom)
-print("p-value:", p_value)
+
+# Read the Excel file
+data_frame = pd.read_excel('E:/data.xlsx')
+# Converting the date column to datetime format and grouping
+data_frame['Date'] = pd.to_datetime(data_frame['Date'])
+grouped_data = data_frame.groupby(data_frame['Date'].dt.year)
+
+# Find the columns to be iterated
+column_names = data_frame.columns[1:]
+print(column_names)
+
+# Define the distributions to fit
+distributions = [stats.lognorm, stats.pearson3, stats.weibull_min, stats.norm]
+# Iterate over the columns
+for column in column_names:
+    print(f"Station: {column}")
+    print("------------")
+    # Find the maximum values
+    max_rainfall = grouped_data[column].max()
+    print(max_rainfall)
+# Find the observed frequency
+#   Get the floor of the minimum and the ceiling of the maximum to multiples of 10
+#     min_value = max_rainfall.min()
+#     max_value = max_rainfall.max()
+    min_value = np.floor(max_rainfall.min() / 10) * 10
+    max_value = np.ceil(max_rainfall.max() / 10) * 10
+    print(min_value, max_value)
+# Define the bin edges for the interval
+    b = np.arange(min_value, max_value + 10, 10)
+    # print(b)
+# Find the observed frequency
+    observed, _ = np.histogram(max_rainfall, bins=b)
+    print("observed", observed)
+
+    x = np.linspace(min_value, max_value, len(b))
+
+    for dist in distributions:
+        # Fit the distribution
+
+        params = dist.fit(max_rainfall)
+        # print(params)
+        if dist == stats.lognorm:
+            print("Lognormal:")
+            expected = len(max_rainfall) * np.diff(stats.lognorm.cdf(x, *params))
+        elif dist == stats.pearson3:
+            print("pearson3:")
+            expected = len(max_rainfall) * np.diff(stats.pearson3.cdf(x, *params))
+        elif dist == stats.weibull_min:
+            print("weibull:")
+            expected = len(max_rainfall) * np.diff(stats.weibull_min.cdf(x, *params))
+        else:
+            print("Normal:")
+            expected = len(max_rainfall) * np.diff(stats.norm.cdf(x, *params))
+
+        D, p_val_KS = kstest(max_rainfall, dist.cdf, args=params)
+        print("expected:", expected)
+        chisqre, p_val_chi2 = chisquare(observed, expected)
+        print("Chisquare:")
+        print(f"Statitstic = {chisqre}")
+        print(f"P-value = {p_val_chi2}")
+        print("K-S test:")
+        print(f'Statistic:={D}')
+        print(f"P-value= {p_val_KS}")
