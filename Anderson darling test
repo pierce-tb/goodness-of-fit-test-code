@@ -1,0 +1,50 @@
+import numpy as np
+from scipy.stats import norm, lognorm, pearson3, chi2, kstest
+
+# Put our data
+max_rainfall = np.array([1.3052167432426075, 2.038445926221173, 1.0136514964291816, 3.2075456697752826, 1.4515090076257242, 2.6958686957227866, 1.779118453842987, 1.8872138090628942, 1.450446511334907, 1.5267917602695077])
+# Sort the data according to ascending order
+sorted_data = np.sort(max_rainfall)
+
+# Number of data count
+n = len(sorted_data)
+
+# euta array banaune strating from 1 to n
+i = np.arange(1, n+1, 1)
+
+# Determine the parameters of the required distribution
+params = lognorm.fit(sorted_data)
+
+# Cumulative distribution function bata CDF value haru nikalne
+cdf_values = lognorm.cdf(sorted_data, *params)
+
+# Survival function value nikalne (survival function vaneko 1-Cdf hunxa)
+sf_values = 1 - cdf_values[::-1]  # tyo cdf value haru lai backward lai first ma lyayeko (needed in formula)
+
+# print('cdf_values: ', cdf_values)
+# print("sf_values: ", sf_values)
+# ----------------------- Anderson-Darling test ko formula = -n-s ----------------------------------------
+# ------------------------where, N is the number of observed data, s is equal to the following code:
+
+s = np.sum((2*i-1)/n*(np.log(cdf_values) + np.log(sf_values)))
+
+# Compute the ad_value
+
+ad_value = -n-s
+print("ad_value: ", ad_value)
+
+# Adjustment of Ad_value
+ad_adj = ad_value*(1+0.75/n+2.25/n**2)
+
+print("adjusted ad_value : ", ad_adj)
+# Compute the p-values
+if ad_adj >= 0.6:
+    p_value = np.exp(1.2937-5.709 * ad_adj + 0.0186 * ad_adj**2)
+elif 0.34 < ad_adj < 0.6:
+    p_value = np.exp(0.9177 - 4.279 * ad_adj - 1.38 * ad_adj**2)
+elif 0.2 < ad_adj < 0.34:
+    p_value = 1 - np.exp(-8.318 + 42.796 * ad_adj - 59.938 * ad_adj ** 2)
+else:
+    p_value = 1 - np.exp(-13.436 + 101.14 * ad_adj - 223.73 * ad_adj**2)
+
+print("p value: ", p_value)
